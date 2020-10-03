@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.3.1
+    container_name: traefik
+    hostname: traefik
+    networks:
+      - traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/letsencrypt:/letsencrypt
+    env_file:
+      - .cloudflare.env
+    command:
+      - --metrics.prometheus=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.http.address=:80
+      - --entrypoints.http.http.redirections.entryPoint.to=https
+      - --entrypoints.http.http.redirections.entryPoint.scheme=https
+      - --entrypoints.https.address=:443
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.email=${LE_ACME_EMAIL?Variable LE_ACME_EMAIL is not set}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=http,https"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.lokalni.dev`)"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=le"
+      - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8080"
+    userns_mode: host
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+
+networks:
+  traefik:
+    name: traefik

@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.3.1
+    container_name: traefik
+    hostname: traefik
+    networks:
+      - traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - "--metrics.prometheus=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.http.address=:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefik-127-0-0-1.nip.io`)"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    userns_mode: host
+    restart: unless-stopped
+    ports:
+      - "80:80"
+
+networks:
+  traefik:
+    name: traefik
